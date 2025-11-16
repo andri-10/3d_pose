@@ -24,3 +24,8 @@ def add_noise(pc, sigma=0.01):
 def random_dropout(pc, drop_rate=0.2):
     mask = np.random.rand(pc.shape[0]) > drop_rate
     return pc[mask]
+
+def apply_visibility_mask(pc, normal=np.array([0, 0, 1]), threshold=0.0):
+    dots = pc @ normal
+    mask = dots > threshold
+    return pc[mask]
