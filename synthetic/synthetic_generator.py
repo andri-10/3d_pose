@@ -44,3 +44,18 @@ def mems_sweep(pc, plane_normal, offsets, thickness=0.03):
     if all_slices:
         return np.vstack(all_slices)
     return np.empty((0, 3))
+
+import json
+import os
+
+def save_sample(pc, R, t, out_dir, idx):
+    os.makedirs(out_dir, exist_ok=True)
+    
+    np.save(f"{out_dir}/pc_{idx}.npy", pc)
+
+    data = {
+        "R": R.tolist(),
+        "t": t.tolist()
+    }
+    with open(f"{out_dir}/pose_{idx}.json", "w") as f:
+        json.dump(data, f)
