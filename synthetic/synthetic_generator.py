@@ -34,3 +34,13 @@ def laser_slice(pc, plane_normal, plane_offset, thickness=0.005):
     dots = pc @ plane_normal
     mask = np.abs(dots - plane_offset) < thickness
     return pc[mask]
+
+def mems_sweep(pc, plane_normal, offsets, thickness=0.03):
+    all_slices = []
+    for d in offsets:
+        slice_pc = laser_slice(pc, plane_normal, d, thickness)
+        if slice_pc.shape[0] > 0:
+            all_slices.append(slice_pc)
+    if all_slices:
+        return np.vstack(all_slices)
+    return np.empty((0, 3))
