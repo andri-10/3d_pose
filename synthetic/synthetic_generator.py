@@ -16,3 +16,11 @@ def random_pose():
 def apply_pose(points, R, t):
     """Apply R and t to point cloud."""
     return (R @ points.T).T + t
+
+def add_noise(pc, sigma=0.01):
+    noise = np.random.normal(0, sigma, pc.shape)
+    return pc + noise
+
+def random_dropout(pc, drop_rate=0.2):
+    mask = np.random.rand(pc.shape[0]) > drop_rate
+    return pc[mask]
