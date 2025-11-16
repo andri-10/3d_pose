@@ -29,3 +29,8 @@ def apply_visibility_mask(pc, normal=np.array([0, 0, 1]), threshold=0.0):
     dots = pc @ normal
     mask = dots > threshold
     return pc[mask]
+
+def laser_slice(pc, plane_normal, plane_offset, thickness=0.005):
+    dots = pc @ plane_normal
+    mask = np.abs(dots - plane_offset) < thickness
+    return pc[mask]
