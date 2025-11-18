@@ -1,8 +1,9 @@
 import numpy as np
 from transforms3d.euler import euler2mat
 
-def generate_cube_points(size=1.0, num_points=2000):
-    """Generate a random point cloud representing a cube."""
+def generate_cube_points(size=1.0, num_points=2000, randomize=True):
+    if randomize:
+        size = size * np.random.uniform(0.8, 1.2)
     pts = np.random.uniform(-size/2, size/2, (num_points, 3))
     return pts
 
