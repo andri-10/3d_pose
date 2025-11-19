@@ -140,3 +140,29 @@ def generate_object_pointcloud(object_type="cube"):
     else:
         raise ValueError("Unsupported object type. Add CAD support later.")
 
+
+# ==============================================================
+# - Helper function
+# ==============================================================
+
+import numpy as np
+
+def simple_two_face_scan(size=1.0, grid_n=32, noise=0.002, randomize=True):
+    if randomize:
+        size = size * np.random.uniform(0.8, 1.2)
+    s = size / 2.0
+
+    u = np.linspace(-s, s, grid_n)
+    v = np.linspace(-s, s, grid_n)
+
+    xs, ys = np.meshgrid(u, v)
+    
+    front = np.stack([xs.ravel(), ys.ravel(), np.full(xs.size, s)], axis=1)
+
+    zs, ys2 = np.meshgrid(u, v)
+    side = np.stack([np.full(zs.size, s), ys2.ravel(), zs.ravel()], axis=1)
+
+    pts = np.vstack([front, side])
+
+    pts += np.random.normal(0, noise, pts.shape)
+    return pts
