@@ -87,30 +87,58 @@ def visibility_mask(pc, normal=np.array([0, 0, 1]), threshold=0.0):
 
 
 # ==============================================================
-# 4. Laser Slice & MEMS Sweep
+# 4. Ray Intersection and MEMS angle scan
 # ==============================================================
 
-def laser_slice(pc, plane_normal, plane_offset, thickness=0.01):
-    d = pc @ plane_normal
-    mask = np.abs(d - plane_offset) < thickness
-    return pc[mask]
+def ray_box_intersection(origin, direction, box_min, box_max):
+    invD = 1.0 / direction
+    t0s = (box_min - origin) * invD
+    t1s = (box_max - origin) * invD
 
-def mems_sweep(pc, plane_normal, thetas_x, thetas_y, thickness=0.01):
-    slices = []
-    idx = 0
+    tmin = np.maximum.reduce(np.minimum(t0s, t1s))
+    tmax = np.minimum.reduce(np.maximum(t0s, t1s))
 
-    for tx in thetas_x:
-        for ty in thetas_y:
-            plane_offset = 0.5 * (np.sin(tx) + np.sin(ty))  # simple model, adjustable later
-            sl = laser_slice(pc, plane_normal, plane_offset, thickness)
-            if sl.shape[0] > 0:
-                slices.append(sl)
+    if tmax < 0 or tmin > tmax:
+        return None
 
-    if len(slices) == 0:
-        return np.empty((0, 3))
+    t_hit = tmin if tmin >= 0 else tmax
+    return origin + t_hit * direction
 
-    return np.vstack(slices)
+def constant_angle_scan_cube(size=1.0,
+                             cube_center=np.array([0.0, 0.0, 1.0]),
+                             fov_x_deg=4.0,
+                             fov_y_deg=4.0,
+                             n_x=64,
+                             n_y=64,
+                             randomize=True):
+    if randomize:
+        size = size * np.random.uniform(0.8, 1.2)
 
+    s = size / 2.0
+    box_min = cube_center - s
+    box_max = cube_center + s
+
+    origin = np.array([0.0, 0.0, 0.0])
+
+    thetas_x = np.linspace(-np.radians(fov_x_deg/2), np.radians(fov_x_deg/2), n_x)
+    thetas_y = np.linspace(-np.radians(fov_y_deg/2), np.radians(fov_y_deg/2), n_y)
+
+    pts = []
+
+    for th in thetas_y:
+        for ph in thetas_x:
+            dx = np.tan(ph)
+            dy = np.tan(th)
+            dz = 1.0
+
+            d = np.array([dx, dy, dz])
+            d = d / np.linalg.norm(d)
+
+            hit = ray_box_intersection(origin, d, box_min, box_max)
+            if hit is not None:
+                pts.append(hit)
+
+    return np.array(pts)
 
 # ==============================================================
 # 5. Normalize Point Count (fixed N)
@@ -140,29 +168,3 @@ def generate_object_pointcloud(object_type="cube"):
     else:
         raise ValueError("Unsupported object type. Add CAD support later.")
 
-
-# ==============================================================
-# - Helper function
-# ==============================================================
-
-import numpy as np
-
-def simple_two_face_scan(size=1.0, grid_n=32, noise=0.002, randomize=True):
-    if randomize:
-        size = size * np.random.uniform(0.8, 1.2)
-    s = size / 2.0
-
-    u = np.linspace(-s, s, grid_n)
-    v = np.linspace(-s, s, grid_n)
-
-    xs, ys = np.meshgrid(u, v)
-    
-    front = np.stack([xs.ravel(), ys.ravel(), np.full(xs.size, s)], axis=1)
-
-    zs, ys2 = np.meshgrid(u, v)
-    side = np.stack([np.full(zs.size, s), ys2.ravel(), zs.ravel()], axis=1)
-
-    pts = np.vstack([front, side])
-
-    pts += np.random.normal(0, noise, pts.shape)
-    return pts
